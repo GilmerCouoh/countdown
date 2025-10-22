@@ -1,423 +1,708 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cuenta regresiva con segundos y sonido</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --text: #e6eef6;
-      --muted: #94a3b8;
-      --card: rgba(255,255,255,0.03);
-      --accent: #06b6d4;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Contador — Fecha/hora & Temporizador (pestañas)</title>
 
-    body.light {
-      --bg: #f2f5f8;
-      --text: #0f172a;
-      --muted: #475569;
-      --card: #ffffff;
-      --accent: #06b6d4;
-    }
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-    body {
-      font-family: Inter, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      transition: background 0.3s, color 0.3s;
-      font-size: 1.05rem;
-    }
+<style>
+  :root{
+    --bg: #0f172a;
+    --card: rgba(255,255,255,0.03);
+    --text: #e6eef6;
+    --muted: #94a3b8;
+    --accent: #06b6d4;
+  }
+  body.light {
+    --bg: #f2f5f8;
+    --card: #fff;
+    --text: #0f172a;
+    --muted: #475569;
+  }
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background:var(--bg);
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    transition:background .25s,color .25s;
+    -webkit-font-smoothing:antialiased;
+  }
 
-    .card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 24px;
-      width: 100%;
-      max-width: 720px;
-      box-shadow: 0 8px 30px rgba(2,6,23,0.3);
-      border: 1px solid rgba(255,255,255,0.1);
-      transition: background 0.3s, color 0.3s;
-      position: relative;
-    }
+  .container{
+    width:100%;
+    max-width:900px;
+    background:var(--card);
+    border-radius:14px;
+    padding:20px;
+    box-shadow:0 10px 30px rgba(2,6,23,0.35);
+    border:1px solid rgba(255,255,255,0.06);
+    box-sizing:border-box;
+  }
 
-    h1 {
-      margin: 0 0 16px 0;
-      font-size: 1.4rem;
-      text-align: center;
-    }
+  .top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
 
-    .row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-      justify-content: center;
-    }
+  h1{margin:0;font-size:1.25rem;text-align:left}
 
-    label {
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
+  /* Nav tabs (modern) */
+  .tabs {
+    display:flex;
+    gap:8px;
+    margin:16px 0;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .tab {
+    padding:10px 14px;
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    font-weight:600;
+    color:var(--muted);
+    background:transparent;
+    border:1px solid transparent;
+    transition: all .15s;
+  }
+  .tab.active{
+    color:var(--text);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    border:1px solid rgba(255,255,255,0.06);
+    border-bottom: 2px solid var(--accent);
+    box-shadow:0 6px 18px rgba(2,6,23,0.25);
+  }
 
-    input[type=datetime-local], select, input[type=file] {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 10px 12px;
-      color: inherit;
-      border-radius: 8px;
-      min-width: 230px;
-      font-size: 1rem;
-      transition: border-color 0.3s;
-    }
+  .panel{display:none;padding:12px 0 0 0}
+  .panel.active{display:block}
 
-    body.light input[type=datetime-local],
-    body.light select,
-    body.light input[type=file] {
-      border-color: #cbd5e1;
-    }
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+    align-items:end;
+  }
 
-    button {
-      background: var(--accent);
-      color: #042;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: background 0.3s, color 0.3s, transform 0.1s;
-    }
+  label{display:block;font-size:0.9rem;color:var(--muted);margin-bottom:6px}
 
-    button:hover {
-      transform: scale(1.03);
-    }
+  input[type=datetime-local],
+  input[type=number],
+  select,
+  input[type=file]{
+    width:100%;
+    padding:10px 12px;
+    font-size:1rem;
+    border-radius:8px;
+    background:transparent;
+    color:inherit;
+    border:1px solid rgba(255,255,255,0.08);
+    box-sizing:border-box;
+  }
+  body.light input[type=datetime-local],
+  body.light input[type=number],
+  body.light select,
+  body.light input[type=file]{
+    border-color:#cbd5e1;
+    color:var(--text);
+  }
 
-    button.ghost {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.1);
-      color: var(--muted);
-    }
+  .controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  button {
+    background:var(--accent);
+    color:#042;
+    border:none;
+    padding:8px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:700;
+  }
+  .ghost{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.08) }
+  .small{ padding:6px 10px; font-weight:600 }
 
-    body.light button.ghost {
-      border-color: #cbd5e1;
-    }
+  .info{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:12px;
+    color:var(--muted);
+  }
+  .big{font-size:1.15rem;color:var(--text);font-weight:700}
 
-    #themeToggle {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.15);
-      color: var(--text);
-      font-size: 1rem;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
+  /* progress */
+  .bar-wrap{
+    margin-top:14px;
+    height:44px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.03);
+    position:relative;
+    overflow:hidden;
+    border:2px solid rgba(255,255,255,0.18);
+    box-sizing:border-box;
+  }
+  body.light .bar-wrap{ border-color:#cbd5e1 }
+  .bar{
+    position:absolute;left:0;top:0;bottom:0;width:0%;
+    transition:width .3s linear, background-color .25s linear;
+  }
+  .bar-text{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font-weight:800;font-size:1.1rem;color:#fff;text-shadow:0 0 6px rgba(0,0,0,0.45);
+    pointer-events:none;
+  }
+  body.light .bar-text{ color:#111; text-shadow:none }
 
-    body.light #themeToggle {
-      border-color: #cbd5e1;
-    }
+  .footer-row{ margin-top:14px; display:flex; justify-content:flex-end; gap:10px; align-items:center; flex-wrap:wrap }
+  .muted-note{ font-size:0.9rem; color:var(--muted) }
 
-    .bar-wrap {
-      background: rgba(255,255,255,0.05);
-      border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 16px;
-      height: 40px;
-      width: 100%;
-      overflow: hidden;
-      margin-top: 16px;
-      position: relative;
-    }
-
-    body.light .bar-wrap {
-      border-color: #cbd5e1;
-    }
-
-    .bar {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 0%;
-      transition: width 0.25s linear, background-color 0.25s linear;
-    }
-
-    .bar-text {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      color: #fff;
-      font-weight: 700;
-      font-size: 1.2rem;
-      pointer-events: none;
-      text-shadow: 0 0 8px rgba(0,0,0,0.5);
-    }
-
-    body.light .bar-text {
-      color: #111;
-      text-shadow: none;
-    }
-
-    .info {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 12px;
-      font-size: 1rem;
-      color: var(--muted);
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .big {
-      font-size: 1.2rem;
-      color: var(--text);
-      font-weight: 700;
-    }
-
-    @media(max-width:520px){
-      input[type=datetime-local] {
-        min-width: 160px;
-      }
-    }
-  </style>
+  /* small screens */
+  @media(max-width:560px){
+    .grid{ grid-template-columns: 1fr; }
+    .top-row{ flex-direction:column; align-items:stretch; gap:10px }
+  }
+</style>
 </head>
 <body>
-  <button id="themeToggle">🌙 Modo claro</button>
-
-  <div class="card">
-    <h1>Cuenta regresiva con segundos</h1>
-
-    <div class="row">
-      <div>
-        <label>Inicio</label><br/>
-        <input id="start" type="datetime-local" step="1" />
-      </div>
-      <div>
-        <label>Fin</label><br/>
-        <input id="end" type="datetime-local" step="1" />
-      </div>
-      <div style="display:flex;align-items:end;gap:8px;">
-        <button id="apply">Aplicar</button>
-        <button id="setNowStart" class="ghost">Iniciar ahora</button>
-        <button id="setDefault" class="ghost">Ejemplo +1h</button>
+  <div class="container" role="main">
+    <div class="top-row">
+      <h1>Cuenta regresiva — Fecha/hora y Temporizador</h1>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="themeToggle" class="small">🌙 Modo claro</button>
       </div>
     </div>
 
-    <div class="row">
-      <div>
-        <label>Sonido al finalizar</label><br/>
-        <select id="soundSelect">
+    <nav class="tabs" role="tablist" aria-label="Contadores">
+      <button class="tab active" data-tab="tab-date" role="tab" aria-selected="true">🕓 Fecha y hora</button>
+      <button class="tab" data-tab="tab-custom" role="tab" aria-selected="false">⏱️ Temporizador personalizado</button>
+    </nav>
+
+    <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+      <div style="min-width:240px">
+        <label>Sonido al finalizar</label>
+        <select id="soundSelect" aria-label="Seleccionar sonido">
           <option value="ding">Ding</option>
           <option value="bell">Campana</option>
           <option value="alarm">Alarma</option>
-          <option value="custom">Subir sonido propio...</option>
+          <option value="none">Sin sonido</option>
+          <option value="custom">Subir sonido...</option>
         </select>
       </div>
-      <div id="customSoundDiv" style="display:none;">
-        <label>Archivo de sonido (.mp3/.wav)</label><br/>
-        <input type="file" id="customSoundInput" accept="audio/*">
+      <div id="uploadWrap" style="display:none;min-width:260px">
+        <label>Archivo de sonido (.mp3/.wav)</label>
+        <input type="file" id="soundUpload" accept="audio/*">
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <label class="muted-note" style="margin-right:6px">Repetir automáticamente</label>
+        <input type="checkbox" id="repeatToggle" title="Reinicia automáticamente cuando termina">
       </div>
     </div>
 
-    <div class="info">
+    <section id="tab-date" class="panel active" role="tabpanel" aria-hidden="false">
+      <div class="grid" style="margin-top:10px">
+        <div>
+          <label>Inicio</label>
+          <input id="date_start" type="datetime-local" step="1" />
+        </div>
+        <div>
+          <label>Fin</label>
+          <input id="date_end" type="datetime-local" step="1" />
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+          <button id="dateApply">Aplicar</button>
+          <button id="dateNow" class="ghost">Iniciar ahora</button>
+          <button id="dateExample" class="ghost">Ejemplo +1h</button>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:14px">
+        <div>
+          <div>Estado</div>
+          <div id="date_status" class="big">—</div>
+        </div>
+        <div style="text-align:right">
+          <div>Tiempo restante</div>
+          <div id="date_remaining" class="big">—</div>
+        </div>
+      </div>
+
+      <div class="bar-wrap" aria-hidden="false">
+        <div id="date_bar" class="bar"></div>
+        <div id="date_barText" class="bar-text">0%</div>
+      </div>
+
+      <div class="info" style="margin-top:10px">
+        <div>Inicio: <span id="date_showStart">—</span></div>
+        <div>Fin: <span id="date_showEnd">—</span></div>
+      </div>
+    </section>
+
+    <section id="tab-custom" class="panel" role="tabpanel" aria-hidden="true">
+      <div class="grid" style="margin-top:10px">
+        <div>
+          <label>Valor</label>
+          <input id="custom_value" type="number" min="1" value="1" />
+        </div>
+        <div>
+          <label>Unidad</label>
+          <select id="custom_unit">
+            <option value="seconds">segundos</option>
+            <option value="minutes" selected>minutos</option>
+            <option value="hours">horas</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:end">
+          <button id="customApply">Aplicar tiempo</button>
+          <button id="customStartNow" class="ghost">Iniciar ahora</button>
+          <button id="customReset" class="ghost">Reiniciar</button>
+        </div>
+      </div>
+
+      <div class="info" style="margin-top:14px">
+        <div>
+          <div>Estado</div>
+          <div id="cust_status" class="big">—</div>
+        </div>
+        <div style="text-align:right">
+          <div>Tiempo restante</div>
+          <div id="cust_remaining" class="big">—</div>
+        </div>
+      </div>
+
+      <div class="bar-wrap" aria-hidden="false">
+        <div id="cust_bar" class="bar"></div>
+        <div id="cust_barText" class="bar-text">0%</div>
+      </div>
+
+      <div class="info" style="margin-top:10px">
+        <div>Inicio: <span id="cust_showStart">—</span></div>
+        <div>Fin: <span id="cust_showEnd">—</span></div>
+      </div>
+    </section>
+
+    <div class="footer-row">
+      <div class="muted-note">Tip: puedes usar segundos en los datetime-local (navegadores compatibles).</div>
       <div>
-        <div>Estado</div>
-        <div id="status" class="big">—</div>
+        <button id="stopAll" class="ghost">Detener todo</button>
       </div>
-      <div style="text-align:right;">
-        <div>Tiempo restante</div>
-        <div id="remaining" class="big">—</div>
-      </div>
-    </div>
-
-    <div class="bar-wrap">
-      <div id="bar" class="bar"></div>
-      <div id="barText" class="bar-text">0%</div>
-    </div>
-
-    <div class="info">
-      <div>Inicio: <span id="showStart">—</span></div>
-      <div>Fin: <span id="showEnd">—</span></div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+/* -------------------------
+    Utilidades y estado global
+    ------------------------- */
+const tabs = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.panel');
+const themeToggle = document.getElementById('themeToggle');
+const soundSelect = document.getElementById('soundSelect');
+const uploadWrap = document.getElementById('uploadWrap');
+const soundUpload = document.getElementById('soundUpload');
+const repeatToggle = document.getElementById('repeatToggle');
+const stopAllBtn = document.getElementById('stopAll');
 
-  <script>
-    const startInput = document.getElementById('start');
-    const endInput = document.getElementById('end');
-    const applyBtn = document.getElementById('apply');
-    const setNowStartBtn = document.getElementById('setNowStart');
-    const setDefaultBtn = document.getElementById('setDefault');
-    const statusEl = document.getElementById('status');
-    const remainingEl = document.getElementById('remaining');
-    const bar = document.getElementById('bar');
-    const barText = document.getElementById('barText');
-    const showStart = document.getElementById('showStart');
-    const showEnd = document.getElementById('showEnd');
-    const themeToggle = document.getElementById('themeToggle');
-    const soundSelect = document.getElementById('soundSelect');
-    const customSoundDiv = document.getElementById('customSoundDiv');
-    const customSoundInput = document.getElementById('customSoundInput');
+// let globalAudio = new Audio(); // <-- ELIMINADO
+let uploadedSoundURL = null;
+let repeatAuto = false;
 
-    let startTime = null, endTime = null, timer = null, finished = false;
-    let customSound = null;
+// [CORRECCIÓN 1] Usar los enlaces de sonido de la versión que SÍ funciona
+const predefSounds = {
+  ding: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
+  bell: "https://actions.google.com/sounds/v1/alarms/medium_bell_ringing_near.ogg",
+  alarm: "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
+};
 
-    const sounds = {
-      ding: "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-      bell: "https://actions.google.com/sounds/v1/alarms/medium_bell_ringing_near.ogg",
-      alarm: "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
-    };
+/* -------------------------
+    Manejo de pestañas (UI)
+    ------------------------- */
+tabs.forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    tabs.forEach(t=>{ t.classList.remove('active'); t.setAttribute('aria-selected','false'); });
+    panels.forEach(p=>{ p.classList.remove('active'); p.setAttribute('aria-hidden','true'); });
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected','true');
+    const id = tab.dataset.tab;
+    const panel = document.getElementById(id);
+    panel.classList.add('active');
+    panel.setAttribute('aria-hidden','false');
+  });
+});
 
-    soundSelect.onchange = () => {
-      customSoundDiv.style.display = soundSelect.value === "custom" ? "block" : "none";
-    };
+/* -------------------------
+    Tema claro/oscuro
+    ------------------------- */
+themeToggle.addEventListener('click', ()=>{
+  document.body.classList.toggle('light');
+  const isLight = document.body.classList.contains('light');
+  themeToggle.textContent = isLight ? '🌙 Modo oscuro' : '☀️ Modo claro';
+});
 
-    customSoundInput.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        customSound = URL.createObjectURL(file);
+/* -------------------------
+    Sonidos: selección/upload
+    ------------------------- */
+soundSelect.addEventListener('change', ()=>{
+  const v = soundSelect.value;
+  uploadWrap.style.display = v === 'custom' ? 'block' : 'none';
+  if(v !== 'custom' && uploadedSoundURL){
+  }
+});
+soundUpload.addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  if(uploadedSoundURL){ URL.revokeObjectURL(uploadedSoundURL); uploadedSoundURL = null; }
+  uploadedSoundURL = URL.createObjectURL(f);
+});
+
+/* -------------------------
+    Sonido: reproducir y reiniciar
+    ------------------------- */
+
+// function stopAndResetAudio(){ ... } // <-- ELIMINADO (innecesario)
+
+// [CORRECCIÓN 2] Lógica de reproducción simple (como en tu V1)
+function playSelectedSound(){
+  const sel = soundSelect.value;
+  if(sel === 'none') return;
+  
+  let src = null;
+  if(sel === 'custom' && uploadedSoundURL) src = uploadedSoundURL;
+  else if(predefSounds[sel]) src = predefSounds[sel];
+
+  if (src) {
+    // Simplemente crea un nuevo audio y repróducelo
+    // Esto funciona porque los enlaces de 'actions.google.com' lo permiten
+    new Audio(src).play().catch(err => {
+        console.debug('Fallo al reproducir audio (ignorable):', err);
+    });
+  }
+}
+
+// function primeAudio() { ... } // <-- ELIMINADO (innecesario)
+
+
+/* -------------------------
+    Confetti grande
+    ------------------------- */
+function bigConfetti(){
+  const duration = 3500;
+  const end = Date.now() + duration;
+  (function frame(){
+    // launch from left and right alternating
+    confetti({
+      particleCount: 7,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 }
+    });
+    confetti({
+      particleCount: 7,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 }
+    });
+    if(Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+
+/* ======================================================
+    Panel 1: Fecha/Hora -> contiene su propio timer
+    ====================================================== */
+const date_start = document.getElementById('date_start');
+const date_end = document.getElementById('date_end');
+const dateApply = document.getElementById('dateApply');
+const dateNow = document.getElementById('dateNow');
+const dateExample = document.getElementById('dateExample');
+const date_status = document.getElementById('date_status');
+const date_remaining = document.getElementById('date_remaining');
+const date_bar = document.getElementById('date_bar');
+const date_barText = document.getElementById('date_barText');
+const date_showStart = document.getElementById('date_showStart');
+const date_showEnd = document.getElementById('date_showEnd');
+
+let dateTimer = null;
+let dateStartTime = null, dateEndTime = null;
+let dateFinished = false;
+
+function parseDT(v){ if(!v) return null; const d=new Date(v); return isNaN(d)?null:d; }
+function fmtLocale(d){ return d ? d.toLocaleString() : '—'; }
+function fmtRemain(ms){
+  if(ms<=0) return '0s';
+  const s=Math.floor(ms/1000);
+  const h=Math.floor(s/3600);
+  const m=Math.floor((s%3600)/60);
+  const sec = s%60;
+  return `${h}h ${m}m ${sec}s`;
+}
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function getColor(percent){ const hue = percent * 1.2; return `hsl(${hue},90%,45%)`; }
+
+function updateDateUI(){
+  const now = new Date();
+  date_showStart.textContent = fmtLocale(dateStartTime);
+  date_showEnd.textContent = fmtLocale(dateEndTime);
+
+  if(!dateStartTime || !dateEndTime){
+    date_status.textContent = 'Define inicio y fin';
+    return;
+  }
+  if(dateEndTime <= dateStartTime){
+    date_status.textContent = 'Hora fin > inicio';
+    return;
+  }
+  if(now < dateStartTime){
+    date_status.textContent = 'Aún no inicia';
+    date_remaining.textContent = 'Empieza en ' + fmtRemain(dateStartTime - now);
+    date_bar.style.width = '0%';
+    date_bar.style.backgroundColor = getColor(0);
+    date_barText.textContent = '0%';
+    dateFinished = false;
+    return;
+  }
+  if(now >= dateEndTime){
+    date_status.textContent = 'Completado';
+    date_remaining.textContent = '0s';
+    date_bar.style.width = '100%';
+    date_bar.style.backgroundColor = getColor(100);
+    date_barText.textContent = '100%';
+    if(!dateFinished){
+      playSelectedSound();
+      bigConfetti();
+      dateFinished = true;
+      if(repeatToggle.checked){
+        // restart with same duration: compute new start/end from now
+        const dur = dateEndTime - dateStartTime;
+        dateStartTime = new Date();
+        dateEndTime = new Date(dateStartTime.getTime() + dur);
+        dateFinished = false;
       }
-    };
-
-    themeToggle.onclick = () => {
-      document.body.classList.toggle('light');
-      themeToggle.textContent = document.body.classList.contains('light')
-        ? '🌙 Modo oscuro'
-        : '☀️ Modo claro';
-    };
-
-    function parseDT(v){ if(!v) return null; const d=new Date(v); return isNaN(d)?null:d; }
-    function fmt(d){ return d?d.toLocaleString():'—'; }
-    function fmtRemain(ms){
-      if(ms<=0) return '0s';
-      const s=Math.floor(ms/1000);
-      const h=Math.floor(s/3600);
-      const m=Math.floor((s%3600)/60);
-      const sec=s%60;
-      return `${h}h ${m}m ${sec}s`;
     }
-    function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
-    function getColor(percent){ const hue = percent * 1.2; return `hsl(${hue}, 90%, 45%)`; }
+    return;
+  }
+  // in progress
+  date_status.textContent = 'En curso';
+  const total = dateEndTime - dateStartTime;
+  const elapsed = now - dateStartTime;
+  const remaining = dateEndTime - now;
+  const pct = clamp((elapsed / total) * 100, 0, 100);
+  const color = getColor(pct);
+  date_bar.style.width = pct + '%';
+  date_bar.style.backgroundColor = color;
+  date_barText.textContent = pct.toFixed(1) + '%';
+  date_remaining.textContent = fmtRemain(remaining);
+  dateFinished = false;
+}
 
-    function playSound(){
-      const selected = soundSelect.value;
-      let src = selected === "custom" && customSound ? customSound : sounds[selected];
-      if (src) new Audio(src).play();
-    }
+function startDateTimer(){
+  if(dateTimer) clearInterval(dateTimer);
+  updateDateUI();
+  dateTimer = setInterval(updateDateUI, 300);
+}
 
-    function showConfetti(){
-      const duration = 3000;
-      const end = Date.now() + duration;
-      (function frame(){
-        confetti({
-          particleCount: 5,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-        if(Date.now() < end) requestAnimationFrame(frame);
-      })();
-    }
+function toInputValWithSeconds(d){
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
 
-    function updateUI(){
-      const now = new Date();
-      showStart.textContent = fmt(startTime);
-      showEnd.textContent = fmt(endTime);
+dateApply.addEventListener('click', ()=>{
+  // primeAudio(); // <-- ELIMINADO
+  dateStartTime = parseDT(date_start.value);
+  dateEndTime = parseDT(date_end.value);
+  dateFinished = false;
+  startDateTimer();
+});
+dateNow.addEventListener('click', ()=>{
+  // primeAudio(); // <-- ELIMINADO
+  const now = new Date();
+  date_start.value = toInputValWithSeconds(now);
+  if(!date_end.value){
+    const later = new Date(now.getTime() + 60*60*1000);
+    date_end.value = toInputValWithSeconds(later);
+  }
+  dateApply.click();
+});
+dateExample.addEventListener('click', ()=>{
+  // primeAudio(); // <-- ELIMINADO
+  const now = new Date();
+  const later = new Date(now.getTime() + 60*60*1000);
+  date_start.value = toInputValWithSeconds(now);
+  date_end.value = toInputValWithSeconds(later);
+  dateApply.click();
+});
 
-      if(!startTime || !endTime){
-        statusEl.textContent = 'Define inicio y fin';
-        return;
+/* ======================================================
+    Panel 2: Temporizador personalizado (independiente)
+    ====================================================== */
+const customValue = document.getElementById('custom_value');
+const customUnit = document.getElementById('custom_unit');
+const customApply = document.getElementById('customApply');
+const customStartNow = document.getElementById('customStartNow');
+const customReset = document.getElementById('customReset');
+const cust_status = document.getElementById('cust_status');
+const cust_remaining = document.getElementById('cust_remaining');
+const cust_bar = document.getElementById('cust_bar');
+const cust_barText = document.getElementById('cust_barText');
+const cust_showStart = document.getElementById('cust_showStart');
+const cust_showEnd = document.getElementById('cust_showEnd');
+
+let custTimer = null;
+let custStart = null, custEnd = null;
+let custFinished = false;
+
+function applyCustomTimerFromNow(){
+  const val = parseFloat(customValue.value);
+  if(isNaN(val) || val <= 0){ alert('Ingresa un valor válido'); return; }
+  let ms = 0;
+  if(customUnit.value === 'seconds') ms = val * 1000;
+  if(customUnit.value === 'minutes') ms = val * 60 * 1000;
+  if(customUnit.value === 'hours') ms = val * 60 * 60 * 1000;
+  custStart = new Date();
+  custEnd = new Date(custStart.getTime() + ms);
+  custFinished = false;
+  startCustTimer();
+}
+
+function updateCustUI(){
+  const now = new Date();
+  cust_showStart.textContent = fmtLocale(custStart);
+  cust_showEnd.textContent = fmtLocale(custEnd);
+
+  if(!custStart || !custEnd){
+    cust_status.textContent = 'Configura y aplica un tiempo';
+    return;
+  }
+  if(now < custStart){
+    cust_status.textContent = 'Aún no inicia';
+    cust_remaining.textContent = 'Empieza en ' + fmtRemain(custStart - now);
+    cust_bar.style.width = '0%';
+    cust_bar.style.backgroundColor = getColor(0);
+    cust_barText.textContent = '0%';
+    custFinished = false;
+    return;
+  }
+  if(now >= custEnd){
+    cust_status.textContent = 'Completado';
+    cust_remaining.textContent = '0s';
+    cust_bar.style.width = '100%';
+    cust_bar.style.backgroundColor = getColor(100);
+    cust_barText.textContent = '100%';
+    if(!custFinished){
+      playSelectedSound();
+      bigConfetti();
+      custFinished = true;
+      if(repeatToggle.checked){
+        const dur = custEnd - custStart;
+        custStart = new Date();
+        custEnd = new Date(custStart.getTime() + dur);
+        custFinished = false;
       }
-
-      if(endTime <= startTime){
-        statusEl.textContent = 'Hora fin > inicio';
-        return;
-      }
-
-      if(now < startTime){
-        statusEl.textContent = 'Aún no inicia';
-        remainingEl.textContent = 'Empieza en ' + fmtRemain(startTime - now);
-        bar.style.width = '0%';
-        bar.style.backgroundColor = getColor(0);
-        barText.textContent = '0%';
-        finished = false;
-        return;
-      }
-
-      if(now >= endTime){
-        statusEl.textContent = 'Completado';
-        remainingEl.textContent = '0s';
-        bar.style.width = '100%';
-        bar.style.backgroundColor = getColor(100);
-        barText.textContent = '100%';
-        if(!finished){
-          playSound();
-          showConfetti();
-          finished = true;
-        }
-        return;
-      }
-
-      // En curso
-      statusEl.textContent = 'En curso';
-      const total = endTime - startTime;
-      const elapsed = now - startTime;
-      const remaining = endTime - now;
-      const pct = clamp((elapsed / total) * 100, 0, 100);
-      const color = getColor(pct);
-      bar.style.width = pct + '%';
-      bar.style.backgroundColor = color;
-      barText.textContent = pct.toFixed(1) + '%';
-      remainingEl.textContent = fmtRemain(remaining);
-      finished = false;
     }
+    return;
+  }
+  // running
+  cust_status.textContent = 'En curso';
+  const total = custEnd - custStart;
+  const elapsed = now - custStart;
+  const remaining = custEnd - now;
+  const pct = clamp((elapsed / total) * 100, 0, 100);
+  const color = getColor(pct);
+  cust_bar.style.width = pct + '%';
+  cust_bar.style.backgroundColor = color;
+  cust_barText.textContent = pct.toFixed(1) + '%';
+  cust_remaining.textContent = fmtRemain(remaining);
+  custFinished = false;
+}
 
-    function startTimer(){
-      if(timer) clearInterval(timer);
-      updateUI();
-      timer = setInterval(updateUI, 300);
-    }
+function startCustTimer(){
+  if(custTimer) clearInterval(custTimer);
+  updateCustUI();
+  custTimer = setInterval(updateCustUI, 300);
+}
 
-    function toInputVal(d){
-      const p=n=>String(n).padStart(2,'0');
-      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-    }
+customApply.addEventListener('click', ()=>{
+  // primeAudio(); // <-- ELIMINADO
+  const val = parseFloat(customValue.value);
+  if(isNaN(val) || val <= 0){ alert('Ingresa un valor válido'); return; }
+  let ms = 0;
+  if(customUnit.value === 'seconds') ms = val * 1000;
+  if(customUnit.value === 'minutes') ms = val * 60 * 1000;
+  if(customUnit.value === 'hours') ms = val * 60 * 60 * 1000;
+  custStart = new Date();
+  custEnd = new Date(custStart.getTime() + ms);
+  startCustTimer();
+});
 
-    applyBtn.onclick = () => {
-      startTime = parseDT(startInput.value);
-      endTime = parseDT(endInput.value);
-      startTimer();
-    };
+customStartNow.addEventListener('click', ()=> {
+  // primeAudio(); // <-- ELIMINADO
+  applyCustomTimerFromNow();
+});
 
-    setNowStartBtn.onclick = () => {
-      const now = new Date();
-      startInput.value = toInputVal(now);
-      if(!endInput.value){
-        const later = new Date(now.getTime() + 60*60*1000);
-        endInput.value = toInputVal(later);
-      }
-      applyBtn.click();
-    };
+customReset.addEventListener('click', ()=>{
+  if(custTimer) clearInterval(custTimer);
+  custStart = null; custEnd = null; custFinished = false;
+  cust_bar.style.width = '0%';
+  cust_bar.style.backgroundColor = getColor(0);
+  cust_barText.textContent = '0%';
+  cust_status.textContent = '—';
+  cust_remaining.textContent = '—';
+  cust_showStart.textContent = '—';
+  cust_showEnd.textContent = '—';
+});
 
-    setDefaultBtn.onclick = () => {
-      const now = new Date();
-      const later = new Date(now.getTime() + 60*60*1000);
-      startInput.value = toInputVal(now);
-      endInput.value = toInputVal(later);
-      applyBtn.click();
-    };
+/* -------------------------
+    Stop all / utility buttons
+    ------------------------- */
+stopAllBtn.addEventListener('click', ()=>{
+  if(dateTimer) clearInterval(dateTimer);
+  if(custTimer) clearInterval(custTimer);
+  dateTimer = null; custTimer = null;
+  dateStartTime = dateEndTime = null;
+  custStart = custEnd = null;
+  date_bar.style.width = '0%';
+  date_barText.textContent = '0%';
+  date_status.textContent = '—';
+  date_remaining.textContent = '—';
+  date_showStart.textContent = '—';
+  date_showEnd.textContent = '—';
 
-    // Inicializar
-    setDefaultBtn.click();
-  </script>
+  cust_bar.style.width = '0%';
+  cust_barText.textContent = '0%';
+  cust_status.textContent = '—';
+  cust_remaining.textContent = '—';
+  cust_showStart.textContent = '—';
+  cust_showEnd.textContent = '—';
+
+  // No hay globalAudio que parar, así que no se necesita stopAndResetAudio()
+});
+
+/* -------------------------
+    Repeat toggle
+    ------------------------- */
+repeatToggle.addEventListener('change', ()=> {
+  // just uses the checkbox state when finishing
+});
+
+/* -------------------------
+    Init: set example values (optional)
+    ------------------------- */
+(function initExample(){
+  // populate date inputs with example
+  const now = new Date();
+  const later = new Date(now.getTime() + 60*60*1000); // +1h
+  const p = n=>String(n).padStart(2,'0');
+  function toVal(d){
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }
+  date_start.value = toVal(now);
+  date_end.value = toVal(later);
+  // init small preview for custom
+  customValue.value = 1;
+  customUnit.value = 'minutes';
+})();
+</script>
 </body>
 </html>
